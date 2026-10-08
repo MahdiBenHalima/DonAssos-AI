@@ -1,0 +1,38 @@
+[
+  {
+    "id": "campaign_001",
+    "title": "Aide alimentaire aux familles",
+    "description": "Distribution de paniers alimentaires aux familles en difficulté.",
+    "tags": ["food", "families", "solidarity"]
+  },
+  {
+    "id": "campaign_002",
+    "title": "Soutien aux enfants défavorisés",
+    "description": "Financement de fournitures scolaires et accompagnement des enfants.",
+    "tags": ["children", "education", "school"]
+  },
+  {
+    "id": "campaign_003",
+    "title": "Aide médicale pour les personnes vulnérables",
+    "description": "Financement de soins médicaux et de médicaments pour les personnes dans le besoin.",
+    "tags": ["health", "medical", "solidarity"]
+  },
+  {
+    "id": "campaign_004",
+    "title": "Construction d'une école",
+    "description": "Projet de construction et d'équipement d'une école pour les enfants d'une région défavorisée.",
+    "tags": ["education", "school", "children"]
+  },
+  {
+    "id": "campaign_005",
+    "title": "Aide aux personnes âgées",
+    "description": "Soutien financier et matériel destiné aux personnes âgées isolées.",
+    "tags": ["elderly", "social", "solidarity"]
+  },
+  {
+    "id": "campaign_006",
+    "title": "Accès à l'eau potable",
+    "description": "Installation de systèmes permettant l'accès à l'eau potable dans les zones rurales.",
+    "tags": ["water", "rural", "development"]
+  }
+]
