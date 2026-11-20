@@ -11,17 +11,17 @@ def days_between(a: datetime, b: datetime) -> float:
 def decayed_weight(base: float, ts: datetime | None, lam: float = LAMBDA_DECAY) -> float:
     if ts is None:
         return base
+    if ts.tzinfo is None:
+        ts = ts.replace(tzinfo=timezone.utc)
     d = days_between(now_utc(), ts)
     return float(base * math.exp(-lam * d))
 
 def normalize_rows_csr(X):
-    from scipy.sparse import csr_matrix
     if not hasattr(X, "tocsr"):
         return X
     X = X.tocsr().astype(np.float32)
     norms = np.sqrt((X.multiply(X)).sum(axis=1)).A1 + 1e-9
     inv = 1.0 / norms
-    D = csr_matrix((inv, X.indices, X.indptr), shape=X.shape)
     X = X.multiply(inv.reshape(-1, 1))
     return X
 
@@ -37,8 +37,10 @@ def mmr_rerank(
     k: int,
     lamb: float = MMR_LAMBDA,
 ) -> list[str]:
+    if not item_ids:
+        return []
     selected, pool = [], list(range(len(item_ids)))
-    rel = (relevance_scores - relevance_scores.min()) / (relevance_scores.ptp() + 1e-9)
+    rel = (relevance_scores - relevance_scores.min()) / (np.ptp(relevance_scores) + 1e-9)
 
     while pool and len(selected) < k:
         best_idx, best_val = None, -1e9
