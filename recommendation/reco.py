@@ -4,7 +4,7 @@ from bson import ObjectId
 import numpy as np
 from .database import campaigns_collection, events_collection
 
-from .schemas import EventIn, RecoQuery, ALPHA, BETA, GAMMA
+from .schemas import EventIn, ALPHA, BETA, GAMMA
 from .content import ContentIndex
 from .signals import user_profile_from_events, popularity_scores
 from .cf import CFUserBased
@@ -30,6 +30,7 @@ async def log_event(ev: EventIn):
 
 @router.post("/reindex")
 async def rebuild_index(lang: str | None = None):
+    CONTENT.item_matrix = None  # force rebuild after new campaign data
     await CONTENT.build(campaigns_collection, lang=lang)
     await CF.build(events_collection)
     return {"ok": True, "lang": lang}
@@ -77,8 +78,8 @@ async def recommendations(
 
     # contenu (cosine)
     prof = profile / (np.linalg.norm(profile) + 1e-9)
-    item_norms = np.linalg.norm(item_mat, axis=1) + 1e-9
-    sim_content = (item_mat @ prof) / item_norms
+    item_norms = np.sqrt(item_mat.multiply(item_mat).sum(axis=1)).A1 + 1e-9
+    sim_content = np.asarray(item_mat @ prof).ravel() / item_norms
     sim_content = np.asarray(sim_content).ravel().astype(np.float32)
 
     # CF (user-based)
