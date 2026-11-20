@@ -1,86 +1,195 @@
-# DonAssos AI — Original recommendation and translation modules
+# DonAssos AI
+### Hybrid Recommendation System & Multilingual Neural Translation
 
-This repository contains the **real AI implementation** extracted from the private DonAssos internship project. It intentionally excludes the Flutter application and the general-purpose donation, authentication and payment backend.
+**AI Engineering · Recommendation Systems · Natural Language Processing**
 
-## What is included
+DonAssos is a donation platform designed to connect donors with associations and fundraising campaigns. During my internship at **IT-BAFA**, I developed the AI components supporting **personalized campaign discovery** and **multilingual accessibility**.
 
-### Hybrid recommendation (original source: `Stage_DonAssos/recon/`)
+This repository presents the actual recommendation and translation modules derived from that work, with limited integration adaptations and documented compatibility fixes.
 
-- **Content-based filtering:** TF-IDF over approved campaign titles, descriptions and tags, with cosine similarity to a user's interaction-derived profile.
-- **User-based collaborative filtering:** sparse user–campaign interaction matrix, weighted by interaction type and recency.
-- **Popularity:** recent donation/view signals from MongoDB.
-- **Hybrid score:** `0.45 * content + 0.35 * collaborative + 0.20 * popularity`.
-- **MMR reranking:** balance relevance and diversity for the final Top-N campaigns.
+**Project focus:** Machine Learning and NLP components — not the full mobile or business application.
 
-`recommendation/reco.py` is adapted from the **actual** original recommendation router. The integration reads the `campaigns` and `events` collections of a MongoDB database. No simulated recommendations or fabricated performance results are included.
+---
 
-### Neural machine translation (original source: `Stage_DonAssos/routes/i18n_router.py`)
+## At a glance
 
-The real PyTorch/Hugging Face Transformers inference code uses Helsinki-NLP/OPUS-MT sequence-to-sequence models. It exposes `POST /i18n/translate` for French, English and Arabic language codes. A model is downloaded and loaded on first use; not every direct model pair may be available upstream, and a missing checkpoint produces a meaningful error. The original in-memory organization-demo CRUD was deliberately excluded.
+| AI capability | Implementation | Purpose |
+| --- | --- | --- |
+| Content-based recommendation | TF-IDF · Cosine similarity | Match campaigns with user interests |
+| Collaborative filtering | User-based CF · Sparse interaction matrix | Learn from related users' interactions |
+| Behavioral signals | Weighted events · Time decay · Popularity | Incorporate engagement and recency |
+| Ranking diversity | Maximal Marginal Relevance (MMR) | Reduce redundancy in Top-N suggestions |
+| Neural translation | Hugging Face Transformers · PyTorch · OPUS-MT | Translate text across French, English and Arabic |
 
-## Repository layout
+**Tech stack:** Python · NumPy · SciPy · scikit-learn · PyTorch · Hugging Face Transformers · MongoDB / Motor · FastAPI
+
+## 1. System architecture
+
+### Personalized campaign recommendations
 
 ```text
-recommendation/
-    cf.py          # user-based collaborative filtering
-    content.py     # TF-IDF content index
-    signals.py     # profile and popularity from MongoDB events
-    utils.py       # time-decay, normalization, MMR
-    schemas.py     # event types, algorithm weights
-    reco.py        # original hybrid ranking pipeline and endpoints
-    database.py    # minimal MongoDB adapter for AI collections
-translation/
-    i18n_router.py # original neural translation inference
-app.py             # minimal AI-only API entry point
-tests/             # algorithm tests (no medical or donor data)
+    Approved Campaigns                      User Interactions
+  (titles, descriptions, tags)          (views, donations, favorites)
+              |                                      |
+              v                                      v
+       TF-IDF Vectorization                Weighted Events + Time Decay
+              |                                      |
+              +------------+-------------------------+
+                           |
+          +----------------+----------------+
+          |                |                |
+          v                v                v
+   Content Similarity   User-Based CF  Popularity Signals
+          |                |                |
+          +----------------+----------------+
+                           |
+                           v
+                     Hybrid Scoring
+                  (0.45 / 0.35 / 0.20)
+                           |
+                           v
+                     MMR Reranking
+                           |
+                           v
+                 Personalized Top-N List
 ```
 
-## Installation
+The original implementation uses campaign documents and interaction events stored in **MongoDB**.
 
-Python 3.10+ is recommended. Create a virtual environment, then:
+**Hybrid scoring**
+
+```text
+score(user, campaign)
+    = 0.45 × content_similarity
+    + 0.35 × collaborative_score
+    + 0.20 × popularity_score
+```
+
+These weights come from the original project code; they are not claimed to be the outcome of a benchmark or optimization study.
+
+### Multilingual translation
+
+```text
+Input text + source/target language
+                 |
+                 v
+       Hugging Face Tokenizer
+                 |
+                 v
+       Helsinki-NLP / OPUS-MT
+                 |
+                 v
+          PyTorch Inference
+                 |
+                 v
+           Translated Text
+```
+
+The translation module uses sequence-to-sequence pretrained models and selects CUDA, Apple MPS or CPU depending on availability. Checkpoint availability depends on the requested language pair and upstream models.
+
+## 2. My technical contributions
+
+- Implemented a **hybrid recommendation pipeline** combining semantic content, collaborative behavior and popularity signals.
+- Built user–item interaction representations using **SciPy sparse matrices** and weighted event histories.
+- Incorporated **time-decay weighting** and an **MMR reranker** to balance relevance with diversity.
+- Integrated a **neural text translation module** based on pretrained Hugging Face sequence-to-sequence models.
+- Exposed the AI modules through focused **FastAPI endpoints** backed by the actual project's MongoDB collection schema.
+
+## 3. Source code structure
+
+```text
+DonAssos-AI/
+├── recommendation/
+│   ├── content.py        # TF-IDF indexing and content similarity
+│   ├── cf.py             # User-based collaborative filtering
+│   ├── signals.py        # User profiles and popularity signals
+│   ├── schemas.py        # Interaction types and ranking weights
+│   ├── utils.py          # Recency decay, normalization and MMR
+│   ├── reco.py           # End-to-end hybrid ranking logic
+│   └── database.py       # AI-only MongoDB collection adapter
+├── translation/
+│   └── i18n_router.py    # Neural translation inference
+├── tests/
+│   └── test_ranking.py   # Ranking utility tests
+├── examples/
+├── app.py                # Minimal AI-focused API integration
+├── requirements.txt
+└── README.md
+```
+
+The core recommendation components are taken from the original project's `Stage_DonAssos/recon/` directory. The translation inference originates from `Stage_DonAssos/routes/i18n_router.py`. Some integration and numerical-compatibility changes are documented below.
+
+## 4. Running the project
+
+**Requirements:** Python 3.10+; an authorized MongoDB instance with `campaigns` and `events` collections for recommendation requests; internet access and model downloads for first-time translation inference.
 
 ```bash
+git clone https://github.com/MahdiBenHalima/DonAssos-AI.git
+cd DonAssos-AI
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-To use recommendations against **your own authorized DonAssos database**, set the environment variables shown in `.env.example` (in your shell or via your deployment secret manager; `app.py` does not load `.env` automatically):
+Set connection settings in your environment, using your **own authorized** database:
 
 ```bash
-export MONGODB_URI='mongodb://localhost:27017'
-export MONGODB_DB_NAME='donassos'
+export MONGODB_URI="mongodb://localhost:27017"
+export MONGODB_DB_NAME="donassos"
 uvicorn app:app --reload
 ```
 
-Windows PowerShell:
+For PowerShell, use `$env:MONGODB_URI="mongodb://localhost:27017"` and `$env:MONGODB_DB_NAME="donassos"`.
 
-```powershell
-$env:MONGODB_URI='mongodb://localhost:27017'
-$env:MONGODB_DB_NAME='donassos'
-uvicorn app:app --reload
-```
+The app deliberately **requires** `MONGODB_URI` at startup; it does not substitute artificial campaign records. For local testing, you may configure a database you own, but this repository does not distribute donor data.
 
-**The API will not start without `MONGODB_URI`**; it does not silently use fictional campaigns. Required MongoDB collections are `campaigns` (approved campaign documents) and `events` (interaction documents with user and item identifiers).
+### AI endpoints
 
-## API
-
-- `GET /reco/recommendations?user_id=<id>&k=10`: rank approved campaigns from real stored interactions and campaign content
-- `POST /reco/events`: write an interaction event to MongoDB
-- `POST /reco/reindex`: rebuild the content and collaborative indexes
-- `POST /i18n/translate`: run actual model inference
-- `GET /i18n/healthz`: report supported language codes and chosen compute device
+| Method | Route | Function |
+| --- | --- | --- |
+| GET | `/reco/recommendations` | Rank campaigns for `user_id`, optional `k`, `lang`, `exclude_seen` |
+| POST | `/reco/events` | Record an interaction event |
+| POST | `/reco/reindex` | Refresh campaign and interaction indexes |
+| POST | `/i18n/translate` | Run neural translation |
+| GET | `/i18n/healthz` | Return model-device and language-code information |
 
 Example translation request:
 
 ```json
-{"text":"Bonjour","src_lang":"fr","tgt_lang":"en"}
+{
+  "text": "Bonjour",
+  "src_lang": "fr",
+  "tgt_lang": "en"
+}
 ```
 
-These are the AI-specific interfaces; **they are not an independently secured production service**. The original general backend handled authentication and authorization. Do not expose this app directly to the public Internet: protect the API with authentication, authorization, rate limits, and appropriate data minimization before deployment.
+### Tests
 
-## Design notes and known limits
+```bash
+pytest -q
+```
 
-- Indexing and scoring follow the original project. The TF-IDF minimum document frequency is adjusted to support small datasets; the MMR NumPy 2 incompatibility and sparse vector norm/scoring issues are corrected.
-- `POST /reco/reindex` should be called after new campaigns or events so both indices reflect the stored data. Content filtering also rebuilds when the requested language changes.
-- The code still needs integration tests with a configured, authorized MongoDB database, and runtime tests using downloaded translation checkpoints. Neither production behavior nor benchmark accuracy is claimed here.
-- No real donor records, MongoDB credentials, payment functions or Flutter code are distributed in this repository.
-- Only publish code you are authorized to disclose.
+Unit tests cover MMR ranking behavior, sparse-matrix normalization and time-decay utility behavior. **Tests have been added but their successful execution has not yet been verified.**
+
+## 5. Implementation notes
+
+The repository preserves the core project approach, with a small number of fixes for reproducibility and library compatibility:
+
+- NumPy 2 compatibility for MMR score range calculation.
+- Correct sparse-vector normalization and collaborative-filtering score conversion.
+- TF-IDF support for small campaign collections.
+- Explicit handling of empty ranking candidate sets and index refreshes.
+- An isolated MongoDB adapter exposing only the collections needed by the AI pipeline.
+
+**Current verification status:** The implementation has been compared with the original private source repository, but an end-to-end run against an authorized MongoDB dataset and live Hugging Face model checkpoints has **not** been validated here. No recommendation accuracy, latency or translation quality metric is asserted without measurement.
+
+## 6. Scope and responsible use
+
+This is an **AI engineering portfolio repository**. It does not include the Flutter application, authentication implementation, payments or the full business backend. There are no real donor records or database credentials provided.
+
+The standalone AI endpoints do **not** implement the original application's authorization layer. They must not be exposed publicly without authentication, authorization, request limits and proper privacy controls.
+
+---
+
+**Context:** AI & Development Internship — **IT-BAFA**  
+**Focus:** Recommendation Systems · NLP · Machine Learning Integration
