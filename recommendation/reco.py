@@ -74,6 +74,8 @@ async def recommendations(
     # aligner avec l'index
     idxs = CONTENT.ids_to_indices(item_ids)
     item_ids = [CONTENT.item_ids[i] for i in idxs]
+    if not item_ids:
+        return {"items": []}
     item_mat = CONTENT.item_matrix[idxs]
 
     # contenu (cosine)
