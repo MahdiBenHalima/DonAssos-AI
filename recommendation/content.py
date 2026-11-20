@@ -40,7 +40,7 @@ class ContentIndex:
         self.vectorizer = TfidfVectorizer(
             max_features=100_000,
             ngram_range=(1,2),
-            min_df=2
+            min_df=1
         )
         self.item_matrix = self.vectorizer.fit_transform(texts).astype(np.float32)
         self.lang_cached = lang or "__all__"
