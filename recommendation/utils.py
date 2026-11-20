@@ -23,7 +23,7 @@ def normalize_rows_csr(X):
     norms = np.sqrt((X.multiply(X)).sum(axis=1)).A1 + 1e-9
     inv = 1.0 / norms
     X = X.multiply(inv.reshape(-1, 1))
-    return X
+    return X.tocsr()
 
 def cosine_sim(vec: np.ndarray, mat: np.ndarray) -> np.ndarray:
     v = vec / (np.linalg.norm(vec) + 1e-9)

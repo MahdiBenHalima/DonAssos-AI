@@ -110,7 +110,8 @@ DonAssos-AI/
 ├── translation/
 │   └── i18n_router.py    # Neural translation inference
 ├── tests/
-│   └── test_ranking.py   # Ranking utility tests
+│   ├── test_ranking.py   # Ranking utility tests
+│   └── test_mongodb_integration.py # Actual engine against temporary MongoDB
 ├── examples/
 ├── app.py                # Minimal AI-focused API integration
 ├── requirements.txt
@@ -169,7 +170,23 @@ Example translation request:
 pytest -q
 ```
 
-Unit tests cover MMR ranking behavior, sparse-matrix normalization and time-decay utility behavior. **Tests have been added but their successful execution has not yet been verified.**
+The unit tests cover MMR ranking, sparse-matrix normalization and time-decay. The **MongoDB integration test exercises the real recommendation modules**, using an isolated temporary database with explicitly controlled fixtures. No scoring algorithm is reimplemented inside the test.
+
+Run the integration test with `MONGODB_URI` pointing to an accessible **disposable** MongoDB server:
+
+```bash
+python -m pytest tests -q
+```
+
+GitHub Actions runs these tests against its own MongoDB service on pull requests and pushes to `main`. This validates software integration, **not recommendation accuracy on real donors** or live production infrastructure.
+
+To request recommendations from a **running real API**, use:
+
+```bash
+python -m examples.live_recommendations YOUR_EXISTING_USER_ID
+```
+
+The earlier example with simulated collaborative interactions and manually assigned popularity values was removed. The live example invokes `/reco/recommendations`; it does not simulate ranking.
 
 ## 5. Implementation notes
 
@@ -181,7 +198,7 @@ The repository preserves the core project approach, with a small number of fixes
 - Explicit handling of empty ranking candidate sets and index refreshes.
 - An isolated MongoDB adapter exposing only the collections needed by the AI pipeline.
 
-**Current verification status:** The implementation has been compared with the original private source repository, but an end-to-end run against an authorized MongoDB dataset and live Hugging Face model checkpoints has **not** been validated here. No recommendation accuracy, latency or translation quality metric is asserted without measurement.
+**Current verification status:** The implementation has been compared with the original private source repository. The new integration test is designed to check the real engine with a disposable MongoDB instance in CI. Its pass status must be checked in GitHub Actions; it does not constitute validation against production donor records. Hugging Face translation model checkpoints also require separate runtime validation. No recommendation accuracy, latency or translation quality metric is asserted without measurement.
 
 ## 6. Scope and responsible use
 
