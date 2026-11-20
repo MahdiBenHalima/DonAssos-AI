@@ -60,5 +60,5 @@ class CFUserBased:
         sim_users = self.R_row_norm @ r_u
         if sim_users.shape[0] > ui:
             sim_users[ui, 0] = 0.0
-        scores = (sim_users.T @ self.R).A1
+        scores = (sim_users.T @ self.R).toarray().ravel()
         return float(scores[ii])
